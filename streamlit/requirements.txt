@@ -1,0 +1,7 @@
+streamlit==1.9.0
+#python-dotenv==0.19.2
+av==9.2.0
+#deepspeech==0.9.3
+numpy==1.21.4
+pydub==0.25.1
+streamlit_webrtc==0.5.1
