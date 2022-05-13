@@ -1,12 +1,9 @@
-import os
 import sys
-from multiprocessing import dummy
 from pathlib import Path, PurePath
 
 vggish_path = PurePath(sys.path[0]).parent.joinpath(
     "../models/research/audioset/vggish"
 )
-# vggish_path = os.path.join(sys.path[0],"../../models/research/audioset/vggish")
 sys.path.append(str(vggish_path))
 
 # Dummy file for CUDA preload
@@ -57,7 +54,9 @@ class FeatureExtractor:
         self.pproc = vggish_postprocess.Postprocessor(FLAGS.pca_params)
 
         with tf.Graph().as_default():
-            self.sess = tf.Session()
+            # Try to reduce GPU memory usage
+            gpu_options = tf.GPUOptions(per_process_gpu_memory_fraction=0.5)
+            self.sess = tf.Session(config=tf.ConfigProto(gpu_options=gpu_options))
             # Define the model in inference mode, load the checkpoint, and
             # locate input and output tensors.
             vggish_slim.define_vggish_slim(training=False)
@@ -76,28 +75,30 @@ class FeatureExtractor:
         [embedding_batch] = self.sess.run(
             [self.embedding_tensor], feed_dict={self.features_tensor: examples_batch}
         )
-        # print("Embedding batch: ", embedding_batch)
         postprocessed_batch = self.pproc.postprocess(embedding_batch)
 
-        seq_example = tf.train.SequenceExample(
-            feature_lists=tf.train.FeatureLists(
-                feature_list={
-                    vggish_params.AUDIO_EMBEDDING_FEATURE_NAME: tf.train.FeatureList(
-                        feature=[
-                            tf.train.Feature(
-                                bytes_list=tf.train.BytesList(
-                                    value=[embedding.tobytes()]
-                                )
-                            )
-                            for embedding in postprocessed_batch
-                        ]
-                    )
-                }
-            )
-        )
-        # print("SEQ_EXAMPLE: ", seq_example)
+        return postprocessed_batch
 
-        return seq_example
+        # seq_example = tf.train.SequenceExample(
+        #    feature_lists=tf.train.FeatureLists(
+        #        feature_list={
+        #            vggish_params.AUDIO_EMBEDDING_FEATURE_NAME: tf.train.FeatureList(
+        #                feature=[
+        #                    tf.train.Feature(
+        #                        bytes_list=tf.train.BytesList(
+        #                            value=[embedding.tobytes()]
+        #                        )
+        #                    )
+        #                    for embedding in postprocessed_batch
+        #                ]
+        #            )
+        #        }
+        #    )
+        # )
+        ## print("SEQ_EXAMPLE: ", seq_example)
+
+    #
+    # return seq_example
 
     def init_cuda(self):
         self.sess.run(

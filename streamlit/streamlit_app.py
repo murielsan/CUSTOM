@@ -8,9 +8,11 @@ from streamlit_webrtc import (AudioProcessorBase, ClientSettings, WebRtcMode,
 
 import streamlit as st
 # Local imports
-from utils.extract_features import FeatureExtractor
+import utils.communications
+from utils.predictor import Predictor
 from utils.sound_utils import SoundHelper
 
+# Introduction
 st.title("Urban Sounds Detection")
 st.image("./images/MadridSkyline.jpg")
 st.markdown(
@@ -24,11 +26,10 @@ st.markdown(
 )
 
 
-
 # Load inference model
 @st.experimental_singleton
-def get_feature_extractor():
-    return FeatureExtractor()
+def get_predictor():
+    return Predictor()
 
 
 # Load sound helper
@@ -38,8 +39,11 @@ def get_sound_helper():
 
 
 # They will be loaded only once
-fe = get_feature_extractor()
-sh = get_sound_helper()
+predictor = get_predictor()
+if "predictor" not in st.session_state:
+    predictor.start()
+    st.session_state["predictor"] = "running"
+sound_helper = get_sound_helper()
 
 # Get logger
 logger = logging.getLogger(__name__)
@@ -85,16 +89,22 @@ while True:
                 sound_window_buffer = sound_window_buffer[-sound_window_len:]
         # Save sound file when it reaches the specified length
         if sound_window_buffer.duration_seconds >= sound_window_len / 1000:
-            sound = sh.save_sound(sound_window_buffer)
+            # sound = sh.save_sound(sound_window_buffer)
+            sound_helper.save_sound(sound_window_buffer)
             sound_window_buffer = pydub.AudioSegment.empty()
             # sound_window_buffer = sound_window_buffer.set_channels(1)  # Stereo to mono
             # filename = f"..\sounds\sound{i}.wav"
             # sound_window_buffer.export(filename, format="wav")
-            features = fe.extract_features(sound)
+            # features = fe.extract_features(sound)
             # i += 1
             # Empty sound
+            try:
+                tag_read = utils.communications.predictQueue.get_nowait()
+                st.header(tag_read)
+                print(tag_read)
+            except queue.Empty:
+                pass
 
-            print(f"Features data:{features}")
     else:
         logger.warning("AudioReceiver is not set. Abort.")
         break

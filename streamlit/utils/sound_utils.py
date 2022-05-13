@@ -1,6 +1,8 @@
 import sys
 from pathlib import Path, PurePath
 
+from .communications import soundsQueue
+
 
 class SoundHelper:
 
@@ -37,5 +39,8 @@ class SoundHelper:
             self.current_file = 0
         else:
             self.current_file += 1
+
+        # Put the file in the queue
+        soundsQueue.put(self.file_name)
 
         return self.file_name
