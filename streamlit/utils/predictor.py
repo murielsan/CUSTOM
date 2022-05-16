@@ -7,7 +7,6 @@ import tensorflow as tf
 from sklearn.preprocessing import MultiLabelBinarizer
 
 from .communications import predictQueue, soundsQueue
-
 # print(f"Path: {Path(__file__).parent.resolve()}")
 # sys.path.append(Path(__file__).parent.resolve())
 from .extract_features import FeatureExtractor
@@ -55,11 +54,15 @@ class Predictor(threading.Thread):
             for x in features:
                 # Predict
                 res = self.model(x.reshape((1, 128, 1)))
+                # THIS WAS MULTILABEL CASE
                 # Filter to activate or not a neurone
-                res = np.vectorize(lambda x: 1 if x > THRESHOLD else 0)(res)
+                # res = np.vectorize(lambda x: 1 if x == THRESHOLD else 0)(res)
                 # Transform results into labels
-                sounds = self.mlb.inverse_transform(res)
+                # sounds = self.mlb.inverse_transform(res)
                 # Transform labels into names
-                sound_names = [CLASSES_DICTIONARY.get(s) for s in sounds[0]]
+                # sound_names = [CLASSES_DICTIONARY.get(s) for s in sounds[0]]
+
+                # MULTICLASS
+                sound_names = CLASSES_DICTIONARY.get(self.mlb.classes_[res.numpy().argmax()])
 
                 predictQueue.put(sound_names)

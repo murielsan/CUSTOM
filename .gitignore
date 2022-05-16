@@ -130,5 +130,5 @@ dmypy.json
 
 # CUSTOM proyect
 /dataset
-/sounds
+streamlit\sounds
 vggish_model.ckpt

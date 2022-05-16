@@ -3,10 +3,15 @@ import logging.handlers
 import queue
 
 import pydub
-from streamlit_webrtc import (AudioProcessorBase, ClientSettings, WebRtcMode,
-                              webrtc_streamer)
+from streamlit_webrtc import (
+    AudioProcessorBase,
+    ClientSettings,
+    WebRtcMode,
+    webrtc_streamer,
+)
 
 import streamlit as st
+
 # Local imports
 import utils.communications
 from utils.predictor import Predictor
@@ -57,7 +62,7 @@ webrtc_ctx = webrtc_streamer(
 )
 
 # Length of the chunks to be created in ms
-sound_window_len = 10000
+sound_window_len = 5000
 # Initialize sound object
 sound_window_buffer = pydub.AudioSegment.empty()
 # Initialize sound files counter
