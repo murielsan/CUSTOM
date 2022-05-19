@@ -21,7 +21,7 @@ from utils.sound_utils import SoundHelper
 st.title("Urban Sounds Detection")
 st.image("./images/MadridSkyline.jpg")
 st.markdown(
-    "Hi! Welcome to my final project on [CoreCode](https://corecode.school/) Bootcamp, where I've been learning Machine Learning"
+    "Hi! Welcome to my final project on [CoreCode](https://corecode.school/) Bootcamp, where I've been studying Machine Learning"
 )
 st.markdown(
     "In this case, I'll try to apply ML models to sounds captured from the streets of the city where I live, Madrid, and try to classify them. You can try it on yours, of course!"
@@ -65,8 +65,9 @@ webrtc_ctx = webrtc_streamer(
 sound_window_len = 5000
 # Initialize sound object
 sound_window_buffer = pydub.AudioSegment.empty()
-# Initialize sound files counter
-# i = 0
+
+# Display predicted class
+tag = st.empty()
 
 # Main Loop
 while True:
@@ -105,8 +106,10 @@ while True:
             # Empty sound
             try:
                 tag_read = utils.communications.predictQueue.get_nowait()
-                st.header(tag_read)
                 print(tag_read)
+
+                # Display in our web
+                tag.header(tag_read)
             except queue.Empty:
                 pass
 
