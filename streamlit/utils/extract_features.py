@@ -1,13 +1,13 @@
 import sys
-from pathlib import Path, PurePath
+from pathlib import PurePath
+
+import numpy as np
+from pydub import AudioSegment
 
 vggish_path = PurePath(sys.path[0]).parent.joinpath(
     "../models/research/audioset/vggish"
 )
 sys.path.append(str(vggish_path))
-
-# Dummy file for CUDA preload
-dummy_wav = f"{str(PurePath(sys.path[0]).parent)}/utils/dummy.wav"
 
 import tensorflow.compat.v1 as tf
 import vggish_input
@@ -49,6 +49,9 @@ class FeatureExtractor:
     features_tensor = None
     embedding_tensor = None
 
+    # Dummy file for CUDA preload
+    dummy_wav = None
+
     def __init__(self):
         # Prepare a postprocessor to munge the model embeddings.
         self.pproc = vggish_postprocess.Postprocessor(FLAGS.pca_params)
@@ -70,7 +73,9 @@ class FeatureExtractor:
         self.init_cuda()
 
     def extract_features(self, wav_file):
+
         examples_batch = vggish_input.wavfile_to_examples(wav_file)
+
         # Run inference and postprocessing.
         [embedding_batch] = self.sess.run(
             [self.embedding_tensor], feed_dict={self.features_tensor: examples_batch}
@@ -79,31 +84,30 @@ class FeatureExtractor:
 
         return postprocessed_batch
 
-        # seq_example = tf.train.SequenceExample(
-        #    feature_lists=tf.train.FeatureLists(
-        #        feature_list={
-        #            vggish_params.AUDIO_EMBEDDING_FEATURE_NAME: tf.train.FeatureList(
-        #                feature=[
-        #                    tf.train.Feature(
-        #                        bytes_list=tf.train.BytesList(
-        #                            value=[embedding.tobytes()]
-        #                        )
-        #                    )
-        #                    for embedding in postprocessed_batch
-        #                ]
-        #            )
-        #        }
-        #    )
-        # )
-        ## print("SEQ_EXAMPLE: ", seq_example)
+    def extract_features_from_stream(self, audio: AudioSegment):
 
-    #
-    # return seq_example
+        frame_rate = audio.frame_rate
+        audio = (
+            np.array(audio.split_to_mono()[0].get_array_of_samples()).astype(np.float32)
+            / 32768.0
+        )
+        print(f"Audio shape: {audio.shape}")
+        examples_batch = vggish_input.waveform_to_examples(audio, frame_rate)
+
+        # Run inference and postprocessing.
+        [embedding_batch] = self.sess.run(
+            [self.embedding_tensor], feed_dict={self.features_tensor: examples_batch}
+        )
+        postprocessed_batch = self.pproc.postprocess(embedding_batch)
+
+        return postprocessed_batch
 
     def init_cuda(self):
+        self.dummy_wav = f"{str(PurePath(sys.path[0]).parent)}/utils/dummy.wav"
+
         self.sess.run(
             [self.embedding_tensor],
             feed_dict={
-                self.features_tensor: vggish_input.wavfile_to_examples(dummy_wav)
+                self.features_tensor: vggish_input.wavfile_to_examples(self.dummy_wav)
             },
         )

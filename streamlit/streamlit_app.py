@@ -17,6 +17,31 @@ import utils.communications
 from utils.predictor import Predictor
 from utils.sound_utils import SoundHelper
 
+##### INITIALIZATIONS ####
+st.session_state["audio_type"] = "stream"
+
+# Load inference model
+@st.experimental_singleton
+def get_predictor():
+    return Predictor(audio_type=st.session_state.audio_type)
+
+
+# Load sound helper
+@st.experimental_singleton
+def get_sound_helper():
+    return SoundHelper()
+
+
+# Get logger
+logger = logging.getLogger(__name__)
+
+# Length of the chunks to be created in ms, must be equal to the samples used to train(10s)
+sound_window_len = 10000
+# Initialize sound object
+sound_window_buffer = pydub.AudioSegment.empty()
+
+
+####MAIN CONTENT ####
 # Introduction
 st.title("Urban Sounds Detection")
 st.image("./images/MadridSkyline.jpg")
@@ -31,18 +56,6 @@ st.markdown(
 )
 
 
-# Load inference model
-@st.experimental_singleton
-def get_predictor():
-    return Predictor()
-
-
-# Load sound helper
-@st.experimental_singleton
-def get_sound_helper():
-    return SoundHelper()
-
-
 # They will be loaded only once
 predictor = get_predictor()
 if "predictor" not in st.session_state:
@@ -50,21 +63,15 @@ if "predictor" not in st.session_state:
     st.session_state["predictor"] = "running"
 sound_helper = get_sound_helper()
 
-# Get logger
-logger = logging.getLogger(__name__)
-
 # Create webrtc for audio only
 webrtc_ctx = webrtc_streamer(
     key="Urban Sounds Detection",
     mode=WebRtcMode.SENDONLY,
     audio_receiver_size=1024,
+    # For web deployment
+    # rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
     media_stream_constraints={"audio": True},
 )
-
-# Length of the chunks to be created in ms
-sound_window_len = 5000
-# Initialize sound object
-sound_window_buffer = pydub.AudioSegment.empty()
 
 # Display predicted class
 tag = st.empty()
@@ -93,17 +100,18 @@ while True:
             sound_window_buffer += sound_chunk
             if len(sound_window_buffer) > sound_window_len:
                 sound_window_buffer = sound_window_buffer[-sound_window_len:]
+
         # Save sound file when it reaches the specified length
         if sound_window_buffer.duration_seconds >= sound_window_len / 1000:
-            # sound = sh.save_sound(sound_window_buffer)
-            sound_helper.save_sound(sound_window_buffer)
+
+            if st.session_state.audio_type == "stream":
+                sound_helper.stream_sound(sound_window_buffer)
+            else:
+                sound_helper.save_sound(sound_window_buffer)
+
+            # Empty buffer
             sound_window_buffer = pydub.AudioSegment.empty()
-            # sound_window_buffer = sound_window_buffer.set_channels(1)  # Stereo to mono
-            # filename = f"..\sounds\sound{i}.wav"
-            # sound_window_buffer.export(filename, format="wav")
-            # features = fe.extract_features(sound)
-            # i += 1
-            # Empty sound
+
             try:
                 tag_read = utils.communications.predictQueue.get_nowait()
                 print(tag_read)

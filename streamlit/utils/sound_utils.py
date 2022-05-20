@@ -44,3 +44,9 @@ class SoundHelper:
         soundsQueue.put(self.file_name)
 
         return self.file_name
+
+    def stream_sound(self, buffer):
+        print(
+            f"Buffer received ({buffer.duration_seconds}):\nChannels: {buffer.channels}\nSample Width: {buffer.sample_width}, \nFrame rate: {buffer.frame_rate}"
+        )
+        soundsQueue.put(buffer)
