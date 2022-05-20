@@ -8,18 +8,17 @@ from pydub import AudioSegment
 from sklearn.preprocessing import MultiLabelBinarizer
 
 from .communications import predictQueue, soundsQueue
-
 # print(f"Path: {Path(__file__).parent.resolve()}")
 # sys.path.append(Path(__file__).parent.resolve())
 from .extract_features import FeatureExtractor
-from .qmodel import QModel
+from .qmodel import compile_model
 
 # Directories
 BASE_DIR = f"{Path(__file__).parent.resolve()}"
 MODELS_DIR = "/../../data_preparation/models/"
 FEATURES_DIR = "/../../data_preparation/features/"
 MODEL_FILENAME = "keras_audio_batch32.h5"
-WEIGHTS_FILENAME = ""
+WEIGHTS_FILENAME = "qiuqiangkong_b64_weights.tf"
 MULTILABEL_FILENAME = "multiLabelBinarizer.pkl"
 CLASSES_DICTIONARY_FILENAME = "classes_dict.pkl"
 
@@ -44,8 +43,9 @@ class Predictor(threading.Thread):
         # self.model = tf.keras.models.load_model(modelname)
 
         # Load model from class
-        self.model = QModel()
-        self.model.load_weights(BASE_DIR + MODELS_DIR)
+        print("Compile model: ", type(compile_model()))
+        self.model = compile_model()
+        self.model.load_weights(BASE_DIR + MODELS_DIR + WEIGHTS_FILENAME)
 
         # Load MultiLabelBinarizer
         with open(BASE_DIR + FEATURES_DIR + MULTILABEL_FILENAME, "rb") as mlb_file:

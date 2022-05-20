@@ -6,6 +6,7 @@ from pydub import AudioSegment
 
 vggish_path = PurePath(sys.path[0]).parent.joinpath(
     "../models/research/audioset/vggish"
+    # "C:/Users/jm250119/Documents/CoreCode/CUSTOM/models/research/audioset/vggish"
 )
 sys.path.append(str(vggish_path))
 
@@ -88,7 +89,10 @@ class FeatureExtractor:
 
         frame_rate = audio.frame_rate
         audio = (
-            np.array(audio.split_to_mono()[0].get_array_of_samples()).astype(np.float32)
+            np.array(
+                # audio.set_frame_rate(44100).split_to_mono()[0].get_array_of_samples()
+                audio.split_to_mono()[0].get_array_of_samples()
+            ).astype(np.float32)
             / 32768.0
         )
         print(f"Audio shape: {audio.shape}")
@@ -104,6 +108,7 @@ class FeatureExtractor:
 
     def init_cuda(self):
         self.dummy_wav = f"{str(PurePath(sys.path[0]).parent)}/utils/dummy.wav"
+        # self.dummy_wav = (f"C:/Users/jm250119/Documents/CoreCode/CUSTOM/streamlit/utils/dummy.wav")
 
         self.sess.run(
             [self.embedding_tensor],

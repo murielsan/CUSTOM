@@ -18,7 +18,7 @@ from utils.predictor import Predictor
 from utils.sound_utils import SoundHelper
 
 ##### INITIALIZATIONS ####
-st.session_state["audio_type"] = "stream"
+st.session_state["audio_type"] = "wav"
 
 # Load inference model
 @st.experimental_singleton
