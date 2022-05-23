@@ -125,7 +125,7 @@ while True:
             sound_window_buffer = pydub.AudioSegment.empty()
 
             try:
-                tag_read = utils.communications.predictQueue.get_nowait()
+                tag_read = utils.communications.resultsQueue.get_nowait()
                 print(tag_read)
 
                 # Display in our web

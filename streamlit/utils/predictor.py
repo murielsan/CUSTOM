@@ -11,8 +11,7 @@ import pickle
 import threading
 from pathlib import Path
 
-from .communications import predictQueue, soundsQueue
-
+from .communications import resultsQueue, soundsQueue
 # print(f"Path: {Path(__file__).parent.resolve()}")
 # sys.path.append(Path(__file__).parent.resolve())
 from .extract_features import FeatureExtractor
@@ -83,7 +82,7 @@ class Predictor(threading.Thread):
 
                 print(f"Sound name: {sound_names}")
                 # Put it on the Queue for processing
-                predictQueue.put(sound_names)
+                resultsQueue.put(sound_names)
         else:
             while True:
                 # Extract features
@@ -99,4 +98,4 @@ class Predictor(threading.Thread):
                 sound_names = self.classes_dict.get(self.mlb.classes_[res.argmax()])
 
                 # Put it on the Queue for processing
-                predictQueue.put(sound_names)
+                resultsQueue.put(sound_names)
