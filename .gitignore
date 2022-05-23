@@ -131,7 +131,7 @@ dmypy.json
 # CUSTOM proyect
 /dataset
 streamlit/sounds/*.wav
-vggish_model.ckpt
 test.py
 data_preparation/models
 data_preparation/features
+test_sounds

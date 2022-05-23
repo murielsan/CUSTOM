@@ -1,13 +1,28 @@
+"""
+extract features
+----------------
+
+Contains the functions needed to extract features or audio embeddings
+from audio sources using VGGISH neural network created by Google
+"""
 import sys
 from pathlib import PurePath
 
 import numpy as np
 from pydub import AudioSegment
 
-vggish_path = PurePath(sys.path[0]).parent.joinpath(
-    "../models/research/audioset/vggish"
-    # "C:/Users/jm250119/Documents/CoreCode/CUSTOM/models/research/audioset/vggish"
-)
+MODE = "RELEASE"
+# Need to change directories for my testing
+if MODE == "TEST":
+    vggish_path = PurePath(sys.path[0]).parent.joinpath(
+        "C:/Users/jm250119/Documents/CoreCode/CUSTOM/streamlit/models/vggish"
+    )
+    DUMMY_SOUND_FILE = (
+        "C:/Users/jm250119/Documents/CoreCode/CUSTOM/streamlit/utils/dummy.wav"
+    )
+else:
+    vggish_path = PurePath(sys.path[0]).parent.joinpath("./models/vggish")
+    DUMMY_SOUND_FILE = f"{str(PurePath(sys.path[0]).parent)}/utils/dummy.wav"
 sys.path.append(str(vggish_path))
 
 import tensorflow.compat.v1 as tf
@@ -53,9 +68,14 @@ class FeatureExtractor:
     # Dummy file for CUDA preload
     dummy_wav = None
 
-    def __init__(self):
+    def __init__(self, postprocess=True):
+        """Loads tensorflow, which takes some time"""
         # Prepare a postprocessor to munge the model embeddings.
-        self.pproc = vggish_postprocess.Postprocessor(FLAGS.pca_params)
+        if postprocess:
+            self.pproc = vggish_postprocess.Postprocessor(FLAGS.pca_params)
+            self.postprocess = True
+        else:
+            self.postprocess = False
 
         with tf.Graph().as_default():
             # Try to reduce GPU memory usage
@@ -74,6 +94,7 @@ class FeatureExtractor:
         self.init_cuda()
 
     def extract_features(self, wav_file):
+        """Extract features from a wav sound file"""
 
         examples_batch = vggish_input.wavfile_to_examples(wav_file)
 
@@ -81,11 +102,14 @@ class FeatureExtractor:
         [embedding_batch] = self.sess.run(
             [self.embedding_tensor], feed_dict={self.features_tensor: examples_batch}
         )
-        postprocessed_batch = self.pproc.postprocess(embedding_batch)
 
-        return postprocessed_batch
+        if not self.postprocess:
+            return embedding_batch
+        else:
+            return self.pproc.postprocess(embedding_batch)
 
     def extract_features_from_stream(self, audio: AudioSegment):
+        """Extract features using pydub library -> AudioSegment"""
 
         frame_rate = audio.frame_rate
         audio = (
@@ -102,13 +126,15 @@ class FeatureExtractor:
         [embedding_batch] = self.sess.run(
             [self.embedding_tensor], feed_dict={self.features_tensor: examples_batch}
         )
-        postprocessed_batch = self.pproc.postprocess(embedding_batch)
 
-        return postprocessed_batch
+        if not self.postprocess:
+            return embedding_batch
+        else:
+            return self.pproc.postprocess(embedding_batch)
 
     def init_cuda(self):
-        self.dummy_wav = f"{str(PurePath(sys.path[0]).parent)}/utils/dummy.wav"
-        # self.dummy_wav = (f"C:/Users/jm250119/Documents/CoreCode/CUSTOM/streamlit/utils/dummy.wav")
+        """Preload cuda environment to reduce time"""
+        self.dummy_wav = DUMMY_SOUND_FILE
 
         self.sess.run(
             [self.embedding_tensor],

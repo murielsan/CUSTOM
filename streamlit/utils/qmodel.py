@@ -1,14 +1,7 @@
 import keras
 import keras.backend as K
-import tensorflow as tf
-from tensorflow.keras.layers import (
-    Activation,
-    BatchNormalization,
-    Dense,
-    Dropout,
-    Input,
-    Lambda,
-)
+from tensorflow.keras.layers import (Activation, BatchNormalization, Dense,
+                                     Dropout, Input, Lambda)
 
 
 # Auxiliary model function 1

@@ -3,22 +3,18 @@ import logging.handlers
 import queue
 
 import pydub
-from streamlit_webrtc import (
-    AudioProcessorBase,
-    ClientSettings,
-    WebRtcMode,
-    webrtc_streamer,
-)
+from streamlit_webrtc import (AudioProcessorBase, ClientSettings, WebRtcMode,
+                              webrtc_streamer)
 
 import streamlit as st
-
 # Local imports
 import utils.communications
+from utils.components_callbacks import register_callback
 from utils.predictor import Predictor
 from utils.sound_utils import SoundHelper
 
 ##### INITIALIZATIONS ####
-st.session_state["audio_type"] = "wav"
+st.session_state["audio_type"] = "stream"
 
 # Load inference model
 @st.experimental_singleton
@@ -29,7 +25,7 @@ def get_predictor():
 # Load sound helper
 @st.experimental_singleton
 def get_sound_helper():
-    return SoundHelper()
+    return SoundHelper(st.session_state.audio_type)
 
 
 # Get logger
@@ -41,24 +37,38 @@ sound_window_len = 10000
 sound_window_buffer = pydub.AudioSegment.empty()
 
 
-####MAIN CONTENT ####
+# Web RTC component status
+def get_webrtc_status(comp):
+    if comp.state.playing:
+        return "Recording..."
+    else:
+        return "Stopped"
+
+
+#### MAIN CONTENT ####
 # Introduction
 st.title("Urban Sounds Detection")
 st.image("./images/MadridSkyline.jpg")
 st.markdown(
-    "Hi! Welcome to my final project on [CoreCode](https://corecode.school/) Bootcamp, where I've been studying Machine Learning"
+    "Hi! Welcome to my final project on [CoreCode](https://corecode.school/) "
+    "Bootcamp, where I've been studying Machine Learning"
 )
 st.markdown(
-    "In this case, I'll try to apply ML models to sounds captured from the streets of the city where I live, Madrid, and try to classify them. You can try it on yours, of course!"
+    "In this case, I'll try to apply ML models to sounds captured from the "
+    "streets of the city where I live, Madrid, and try to classify them. "
+    "You can try it on yours, of course!"
 )
 st.markdown(
-    "I've used [Google AudioSet](https://research.google.com/audioset/index.html) for training and selected 10 different categories: \n- Vehicle horn\n- Children playing\n- Dog\n- Jackhammer\n- Siren\n- Traffic noise\n- Subway\n- Footsteps\n- Chatter\n- Bird"
+    "I've used [Google AudioSet](https://research.google.com/audioset/index.html)"
+    " for training and selected 10 different categories: \n- Vehicle horn\n- "
+    "Children playing\n- Dog\n- Jackhammer\n- Siren\n- Traffic noise\n- Subway"
+    "\n- Footsteps\n- Chatter\n- Bird"
 )
 
 
 # They will be loaded only once
-predictor = get_predictor()
 if "predictor" not in st.session_state:
+    predictor = get_predictor()
     predictor.start()
     st.session_state["predictor"] = "running"
 sound_helper = get_sound_helper()
@@ -69,15 +79,17 @@ webrtc_ctx = webrtc_streamer(
     mode=WebRtcMode.SENDONLY,
     audio_receiver_size=1024,
     # For web deployment
-    # rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
+    rtc_configuration={"iceServers": [{"urls": ["stun:stun.l.google.com:19302"]}]},
     media_stream_constraints={"audio": True},
 )
 
 # Display predicted class
+recorder_state = st.empty()
 tag = st.empty()
 
 # Main Loop
 while True:
+    recorder_state.text(get_webrtc_status(webrtc_ctx))
     if webrtc_ctx.audio_receiver:
         try:
             audio_frames = webrtc_ctx.audio_receiver.get_frames(timeout=1)
