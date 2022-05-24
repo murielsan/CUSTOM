@@ -6,12 +6,15 @@ Contains the functions needed to extract features or audio embeddings
 from audio sources using VGGISH neural network created by Google
 """
 import sys
+import threading
 from pathlib import PurePath
 
 import numpy as np
 from pydub import AudioSegment
 
-MODE = "RELEASE"
+from communications import predictQueue, soundsQueue
+
+MODE = "TEST"
 # Need to change directories for my testing
 if MODE == "TEST":
     vggish_path = PurePath(sys.path[0]).parent.joinpath(
@@ -59,17 +62,21 @@ flags.DEFINE_string(
 FLAGS = flags.FLAGS
 
 
-class FeatureExtractor:
+class FeatureExtractor(threading.Thread):
     pproc = None
     sess = None
     features_tensor = None
     embedding_tensor = None
+    audio_type = None
 
     # Dummy file for CUDA preload
     dummy_wav = None
 
-    def __init__(self, postprocess=True):
+    def __init__(self, postprocess=True, audio_type="wav"):
         """Loads tensorflow, which takes some time"""
+        super(FeatureExtractor, self).__init__()
+        self.audio_type = audio_type
+
         # Prepare a postprocessor to munge the model embeddings.
         if postprocess:
             self.pproc = vggish_postprocess.Postprocessor(FLAGS.pca_params)
@@ -93,6 +100,18 @@ class FeatureExtractor:
             )
         self.init_cuda()
 
+    def run(self):
+        if self.audio_type == "stream":
+            while True:
+                # Extract features from stream
+                features = self.extract_features_from_stream(soundsQueue.get())
+                predictQueue.put(features)
+        else:
+            while True:
+                # Extract features from file
+                features = self.extract_features(soundsQueue.get())
+                predictQueue.put(features)
+
     def extract_features(self, wav_file):
         """Extract features from a wav sound file"""
 
@@ -110,17 +129,15 @@ class FeatureExtractor:
 
     def extract_features_from_stream(self, audio: AudioSegment):
         """Extract features using pydub library -> AudioSegment"""
-
-        frame_rate = audio.frame_rate
-        audio = (
-            np.array(
-                # audio.set_frame_rate(44100).split_to_mono()[0].get_array_of_samples()
-                audio.split_to_mono()[0].get_array_of_samples()
-            ).astype(np.float32)
-            / 32768.0
+        print("Received streaming for feature extraction")
+        audio_array = (
+            np.array(audio.get_array_of_samples()).astype(np.float32) / 32768.0
         )
-        print(f"Audio shape: {audio.shape}")
-        examples_batch = vggish_input.waveform_to_examples(audio, frame_rate)
+        print(f"Audio shape: {audio.channels}, Frame rate {audio.frame_rate}")
+
+        examples_batch = vggish_input.waveform_to_examples(
+            audio_array, audio.frame_rate
+        )
 
         # Run inference and postprocessing.
         [embedding_batch] = self.sess.run(

@@ -3,38 +3,41 @@ import logging.handlers
 import queue
 
 import pydub
-from streamlit_webrtc import (AudioProcessorBase, ClientSettings, WebRtcMode,
-                              webrtc_streamer)
+from streamlit_webrtc import WebRtcMode, webrtc_streamer
 
 import streamlit as st
+
 # Local imports
 import utils.communications
-from utils.components_callbacks import register_callback
+from utils.extract_features import FeatureExtractor
 from utils.predictor import Predictor
 from utils.sound_utils import SoundHelper
 
 ##### INITIALIZATIONS ####
-st.session_state["audio_type"] = "stream"
+if "audio_type" not in st.session_state:
+    st.session_state["audio_type"] = "stream"  # wav/stream
+    st.session_state["sound_window_len"] = 10000  # 10s window
+
+# Load features extractor
+@st.experimental_singleton
+def get_features_extractor(at):
+    return FeatureExtractor(audio_type=at)
+
 
 # Load inference model
 @st.experimental_singleton
 def get_predictor():
-    return Predictor(audio_type=st.session_state.audio_type)
+    return Predictor()
 
 
 # Load sound helper
 @st.experimental_singleton
-def get_sound_helper():
-    return SoundHelper(st.session_state.audio_type)
+def get_sound_helper(audio_type):
+    return SoundHelper(audio_type)
 
 
 # Get logger
 logger = logging.getLogger(__name__)
-
-# Length of the chunks to be created in ms, must be equal to the samples used to train(10s)
-sound_window_len = 10000
-# Initialize sound object
-sound_window_buffer = pydub.AudioSegment.empty()
 
 
 # Web RTC component status
@@ -67,11 +70,16 @@ st.markdown(
 
 
 # They will be loaded only once
-if "predictor" not in st.session_state:
+if "initialization" not in st.session_state:
     predictor = get_predictor()
     predictor.start()
-    st.session_state["predictor"] = "running"
-sound_helper = get_sound_helper()
+
+    features_extractor = get_features_extractor(st.session_state.audio_type)
+    features_extractor.start()
+
+    st.session_state["sound_helper"] = get_sound_helper(st.session_state.audio_type)
+    st.session_state["initialization"] = "done"
+
 
 # Create webrtc for audio only
 webrtc_ctx = webrtc_streamer(
@@ -109,21 +117,18 @@ while True:
             sound_chunk += sound
 
         if len(sound_chunk) > 0:
-            sound_window_buffer += sound_chunk
-            if len(sound_window_buffer) > sound_window_len:
-                sound_window_buffer = sound_window_buffer[-sound_window_len:]
+            try:
+                sound_window_buffer += sound_chunk
+            except NameError:
+                sound_window_buffer = pydub.AudioSegment.empty()
+                sound_window_buffer += sound_chunk
 
-        # Save sound file when it reaches the specified length
-        if sound_window_buffer.duration_seconds >= sound_window_len / 1000:
+            if len(sound_window_buffer) >= st.session_state.sound_window_len:
+                print("Got 10 seconds, passing audio")
+                st.session_state.sound_helper.queue_sound(sound_window_buffer)
 
-            if st.session_state.audio_type == "stream":
-                sound_helper.stream_sound(sound_window_buffer)
-            else:
-                sound_helper.save_sound(sound_window_buffer)
-
-            # Empty buffer
-            sound_window_buffer = pydub.AudioSegment.empty()
-
+                # Empty buffer
+                sound_window_buffer = pydub.AudioSegment.empty()
             try:
                 tag_read = utils.communications.resultsQueue.get_nowait()
                 print(tag_read)
