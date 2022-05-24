@@ -3,7 +3,7 @@ from importlib.resources import files
 from pathlib import PurePath
 
 paths = [
-    str(PurePath(sys.path[0]).joinpath("./models/research/audioset/vggish")),
+    str(PurePath(sys.path[0]).joinpath("./streamlit/models/vggish")),
     str(PurePath(sys.path[0]).joinpath("./streamlit/utils")),
 ]
 
@@ -24,10 +24,10 @@ from pydub import AudioSegment
 from qmodel import compile_model
 
 # Load MultiLabelBinarizer
-with open("./data_preparation/features/multiLabelBinarizer.pkl", "rb") as mlb_file:
+with open("./streamlit/features/multiLabelBinarizer.pkl", "rb") as mlb_file:
     mlb = pickle.load(mlb_file)
 # Load classes dictionary
-with open("./data_preparation/features/classes_dict.pkl", "rb") as classes_file:
+with open("./streamlit/features/classes_dict.pkl", "rb") as classes_file:
     classes_dict = pickle.load(classes_file)
 
 
@@ -35,7 +35,7 @@ sounds_dir = "./test_sounds"
 
 # Load model
 model = compile_model()
-model.load_weights("./data_preparation/models/qiuqiangkong_b64_weights.tf")
+model.load_weights("./streamlit/models/qiuqiangkong_b64_weights.tf")
 fe = FeatureExtractor()
 
 for current_file in glob.glob(f"{sounds_dir}/*.wav"):
@@ -69,7 +69,7 @@ for current_file in glob.glob(f"{sounds_dir}/*.wav"):
     print(classes_dict.get(mlb.classes_[res.argmax()]))
 
     print("From stream")
-    features = fe.extract_features_from_stream(sound1)
+    features = fe.extract_features_from_stream(sound1.set_channels(1))
 
     # Get prediction, add 1 dimension
     res = model.predict(features.reshape(1, features.shape[0], features.shape[1]))

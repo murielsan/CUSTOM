@@ -11,17 +11,14 @@ import pickle
 import threading
 from pathlib import Path
 
-from .communications import resultsQueue, soundsQueue
-# print(f"Path: {Path(__file__).parent.resolve()}")
-# sys.path.append(Path(__file__).parent.resolve())
-from .extract_features import FeatureExtractor
+from .communications import predictQueue, resultsQueue
 from .qmodel import compile_model
 
 # Directories
 BASE_DIR = f"{Path(__file__).parent.resolve()}"
 MODELS_DIR = "/../models/"
-FEATURES_DIR = "/features/"
-WEIGHTS_FILENAME = "qiuqiangkong_b64_hdf5_weights.tf"
+FEATURES_DIR = "/../features/"
+WEIGHTS_FILENAME = "qiuqiangkong_b64_weights.tf"
 MULTILABEL_FILENAME = "multiLabelBinarizer.pkl"
 CLASSES_DICTIONARY_FILENAME = "classes_dict.pkl"
 
@@ -33,18 +30,9 @@ class Predictor(threading.Thread):
     classes_dict = None
     audio_type = None
 
-    def __init__(self, audio_type="wav"):
+    def __init__(self):
         """Loads trained model"""
         super(Predictor, self).__init__()
-        # Type of audio input, wav file or audio stream
-        self.audio_type = audio_type
-
-        # Load Feature extractor
-        self.feat_extractor = FeatureExtractor()
-
-        # Load model from file:
-        # modelname = BASE_DIR + MODELS_DIR + MODEL_FILENAME
-        # self.model = tf.keras.models.load_model(modelname)
 
         # Load model from class
         print("Compile model: ", type(compile_model()))
@@ -64,38 +52,18 @@ class Predictor(threading.Thread):
 
     def run(self):
         """Overwrites Thread run function. Waits for the queue and predicts"""
-        if self.audio_type == "stream":
-            while True:
-                # Extract features
-                features = self.feat_extractor.extract_features_from_stream(
-                    soundsQueue.get()
-                )
+        while True:
+            features = predictQueue.get()
 
-                # Get prediction, add 1 dimension
-                res = self.model.predict(
-                    features.reshape(1, features.shape[0], features.shape[1])
-                )
+            # Get prediction, add 1 dimension
+            res = self.model.predict(
+                features.reshape(1, features.shape[0], features.shape[1])
+            )
 
-                print(f"Prediction: {res}, res.argmax = {res.argmax()}")
-                # Get translated result
-                sound_names = self.classes_dict.get(self.mlb.classes_[res.argmax()])
+            print(f"Prediction: {res}, res.argmax = {res.argmax()}")
+            # Get translated result
+            sound_names = self.classes_dict.get(self.mlb.classes_[res.argmax()])
 
-                print(f"Sound name: {sound_names}")
-                # Put it on the Queue for processing
-                resultsQueue.put(sound_names)
-        else:
-            while True:
-                # Extract features
-                features = self.feat_extractor.extract_features(soundsQueue.get())
-
-                # Get prediction, add 1 dimension
-                res = self.model.predict(
-                    features.reshape(1, features.shape[0], features.shape[1])
-                )
-
-                print(f"Prediction: {res}, reg.argmax = {res.argmax()}")
-                # Get translated result
-                sound_names = self.classes_dict.get(self.mlb.classes_[res.argmax()])
-
-                # Put it on the Queue for processing
-                resultsQueue.put(sound_names)
+            print(f"Sound name: {sound_names}")
+            # Put it on the Queue for processing
+            resultsQueue.put(sound_names)
