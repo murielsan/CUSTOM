@@ -34,7 +34,7 @@ We've faced this problem from two different approaches: classic machine learning
 
 ### [Classic Machine Learning](data_preparation/03.-%20classic_ML_classification.ipynb)
 
-In the previous step we saved the y truth  of every record as a binary list of 10 elements (i.e: [0 1 0 0 0 0 0 0 0 0]) which is compatible with neural networks but not with sklearn, therefore, we need to tranform our 10 elements list into a value, which will be the number of the class (Audioset classes are labeled with a number, please refer to the [csv file](http://storage.googleapis.com/us_audioset/youtube_corpus/v1/csv/class_labels_indices.csv)).
+In the previous step we saved the y truth  of every record as a binary list of 10 elements (i.e: [0 1 0 0 0 0 0 0 0 0]) which is compatible with neural networks but not with sklearn, therefore we need to tranform our 10 elements list into a value, which will be the number of the class (Audioset classes are labeled with a number, please refer to the [csv file](http://storage.googleapis.com/us_audioset/youtube_corpus/v1/csv/class_labels_indices.csv)).
 
 As the dataset is not well balanced, we've used cross validation and StratifiedKFold strategy to split the dataset in different sets. The accuracy of the different algorithms tested is as follows:
 
@@ -100,5 +100,14 @@ Streamlit is the entry point for our data source. It has two working modes:
 - "wav": saves the audio as a wav file before feature extraction
 - "stream": connects directly webrtc AudioSegment to 
 
+<<<<<<< Updated upstream
 ## Packages needed
 numpy resampy tensorflow tf_slim six soundfile
+=======
+## What's next?
+1. Find why almost everything is a bird
+2. Create an API to work with [inside shazam](https://github.com/boyander/inside-shazam)
+3. Switch from AudioSet and VGGish to UrbanSounds8k (or similar) and librosa to do our own waveform analysis
+4. Without VGGish weights we will be able to deploy our app to Heroku
+5. Mobile app (Flutter?)  
+>>>>>>> Stashed changes
