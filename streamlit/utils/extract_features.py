@@ -12,9 +12,9 @@ from pathlib import PurePath
 import numpy as np
 from pydub import AudioSegment
 
-from communications import predictQueue, soundsQueue
+from .communications import predictQueue, soundsQueue
 
-MODE = "TEST"
+MODE = "RELEASE"
 # Need to change directories for my testing
 if MODE == "TEST":
     vggish_path = PurePath(sys.path[0]).parent.joinpath(
@@ -105,11 +105,13 @@ class FeatureExtractor(threading.Thread):
             while True:
                 # Extract features from stream
                 features = self.extract_features_from_stream(soundsQueue.get())
+                print(f"Features: \n{features}")
                 predictQueue.put(features)
         else:
             while True:
                 # Extract features from file
                 features = self.extract_features(soundsQueue.get())
+                print(f"Features: \n{features}")
                 predictQueue.put(features)
 
     def extract_features(self, wav_file):
@@ -121,7 +123,7 @@ class FeatureExtractor(threading.Thread):
         [embedding_batch] = self.sess.run(
             [self.embedding_tensor], feed_dict={self.features_tensor: examples_batch}
         )
-
+        print(f"Embedding batch: \n{embedding_batch}")
         if not self.postprocess:
             return embedding_batch
         else:
@@ -144,6 +146,7 @@ class FeatureExtractor(threading.Thread):
             [self.embedding_tensor], feed_dict={self.features_tensor: examples_batch}
         )
 
+        print(f"Embedding batch: \n{embedding_batch}")
         if not self.postprocess:
             return embedding_batch
         else:

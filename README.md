@@ -84,7 +84,7 @@ It works better than the classic model, but it seems to have the same problem wi
 
 We had problems saving this model because of the custom functions defined, so we decided to save only the weights and implement the model in our code.
 
-## Streamlit application
+## [Streamlit application](streamlit)
 
 With our model trained, we created a web application using [Streamlit](https://streamlit.io). The application will capture audio using your computer or mobile audio and will predict the sound being recorded for every 10seconds of audio.
 
@@ -98,16 +98,11 @@ For feature extraction, we'll be using the same NN Google created for their Audi
 
 Streamlit is the entry point for our data source. It has two working modes:
 - "wav": saves the audio as a wav file before feature extraction
-- "stream": connects directly webrtc AudioSegment to 
+- "stream": connects directly webrtc AudioSegment to VGGish Deep Network
 
-<<<<<<< Updated upstream
-## Packages needed
-numpy resampy tensorflow tf_slim six soundfile
-=======
+
 ## What's next?
 1. Find why almost everything is a bird
-2. Create an API to work with [inside shazam](https://github.com/boyander/inside-shazam)
-3. Switch from AudioSet and VGGish to UrbanSounds8k (or similar) and librosa to do our own waveform analysis
-4. Without VGGish weights we will be able to deploy our app to Heroku
-5. Mobile app (Flutter?)  
->>>>>>> Stashed changes
+2. Switch from AudioSet and VGGish to UrbanSounds8k (or similar) and librosa to do our own waveform analysis
+3. Without VGGish weights we will be able to deploy our app to Heroku
+4. Mobile app (Flutter?)  
