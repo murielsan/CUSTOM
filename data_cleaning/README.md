@@ -14,12 +14,12 @@ We're using qiuqiangkong model, which looks like this:
 
 ### Training with balanced data
 This is the confusion matrix (normalized) after the training:
-![Confusion Matrix](../images/new_classes_q64_conf.png)
+![Confusion Matrix](../images/new_classes_q64_conf.jpg)
 
 It's working fine, but it seems to have a problem with two classes: kids and car horn.
 In order to have more datapoints, we added unbalanced data, and got this confusion matrix:
 
-![Confusion Matrix 2](../images/new_classes_q128_all_conf.png)
+![Confusion Matrix 2](../images/new_classes_q128_all_conf.jpg)
 We've improved in everything but child speech. It's normal, as speech is probably containing child speak samples too.
 
 # First approach
