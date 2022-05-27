@@ -132,6 +132,6 @@ dmypy.json
 /dataset
 streamlit/sounds/*.wav
 test.py
-data_preparation/models
-data_preparation/features
+data_cleaning/models
+data_cleaning/features
 test_sounds
