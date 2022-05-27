@@ -58,6 +58,7 @@ Streamlit is the entry point for our data source. It has two working modes:
 
 ## What's next? :crystal_ball:
 1. Improve neural network training
-2. Allow model selection
-3. Switch from AudioSet and VGGish to UrbanSounds8k (or similar) and librosa to do our own waveform analysis
-4. Mobile app (Flutter?)  
+2. Move from streamlit app to streamlit api consumer
+3. Allow model selection
+4. Switch from AudioSet and VGGish to UrbanSounds8k (or similar) and librosa to do our own waveform analysis
+5. Mobile app (Flutter?)  
